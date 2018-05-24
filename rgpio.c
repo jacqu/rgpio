@@ -35,6 +35,8 @@ SUBSYSTEM=="pwm*", PROGRAM="/bin/sh -c '\
 
 #define RGPIO_BUFFER_MAX		50
 
+#define RGPIO_UDEV_DELAY		100000
+
 /* Definition of the output GPIOs */
 
 #define RGPIO_NB_OUTPUT			7
@@ -265,7 +267,7 @@ int rgpio_set_duty_pwm( unsigned char pwm, unsigned int duty )	{
 	
 	fd = open( buffer, O_WRONLY );
 	if ( -1 == fd ) {
-		fprintf( stderr, "rgpio_set_duty_pwm: failed to open period for writing!\n" );
+		fprintf( stderr, "rgpio_set_duty_pwm: failed to open duty_cycle for writing!\n" );
 		return -2;
 	}
 	
@@ -286,11 +288,11 @@ int rgpio_set_enable_pwm( unsigned char pwm, unsigned char value )	{
 		return -1;
 	}
 	
-	snprintf( buffer, RGPIO_BUFFER_MAX, "/sys/class/pwm/pwmchip0/pwm%d/duty_cycle", pwm );
+	snprintf( buffer, RGPIO_BUFFER_MAX, "/sys/class/pwm/pwmchip0/pwm%d/enable", pwm );
 	
 	fd = open( buffer, O_WRONLY );
 	if ( -1 == fd ) {
-		fprintf( stderr, "rgpio_set_enable_pwm: failed to open period for writing!\n" );
+		fprintf( stderr, "rgpio_set_enable_pwm: failed to open enable for writing!\n" );
 		return -2;
 	}
 	
@@ -302,13 +304,15 @@ int rgpio_set_enable_pwm( unsigned char pwm, unsigned char value )	{
 }
 
 int rgpio_init( void )	{
-	int		i;
+	int		i, ret;
 	
 	/* Initialize outputs */
 	
 	for ( i = 0; i < RGPIO_NB_OUTPUT; i++ )	{
-		if ( 	( rgpio_export_gpio( rgpio_output_port[i] ) ) || 
-				( rgpio_direction_gpio( rgpio_output_port[i], RGPIO_OUT ) ) )	{
+		ret = rgpio_export_gpio( rgpio_output_port[i] );
+		usleep( RGPIO_UDEV_DELAY );
+		ret += rgpio_direction_gpio( rgpio_output_port[i], RGPIO_OUT );
+		if ( ret )	{
 			fprintf( stderr, "rgpio_init: failed to initialize output %d!\n", rgpio_output_port[i] );
 			exit( -1 );
 		}
@@ -317,22 +321,14 @@ int rgpio_init( void )	{
 	/* Initialize inputs */
 	
 	for ( i = 0; i < RGPIO_NB_INPUT; i++ )	{
-		if ( 	( rgpio_export_gpio( rgpio_input_port[i] ) ) || 
-				( rgpio_direction_gpio( rgpio_input_port[i], RGPIO_IN ) ) )	{
+		ret = rgpio_export_gpio( rgpio_input_port[i] );
+		usleep( RGPIO_UDEV_DELAY );
+		ret += rgpio_direction_gpio( rgpio_input_port[i], RGPIO_IN );
+		if ( ret )	{
 			fprintf( stderr, "rgpio_init: failed to initialize input %d!\n", rgpio_input_port[i] );
 			exit( -1 );
 		}
 	}
-	
-	/* Initialize pwm */
-	
-	for ( i = 0; i < RGPIO_NB_PWM; i++ )	{
-		if ( rgpio_export_pwm( i ) )	{
-			fprintf( stderr, "rgpio_init: failed to initialize pwm %d!\n", rgpio_input_port[i] );
-			exit( -1 );
-		}
-	}
-	
 	
 	return 0;
 }
@@ -352,22 +348,15 @@ void rgpio_shutdown( void )	{
 	for ( i = 0; i < RGPIO_NB_INPUT; i++ )	{
 		rgpio_unexport_gpio( rgpio_input_port[i] );
 	}
-	
-	/* Shutdown pwm */
-	
-	for ( i = 0; i < RGPIO_NB_PWM; i++ )	{
-		rgpio_set_enable_pwm( i, 0 );
-		rgpio_unexport_pwm( i );
-	}
 }
 
 int main( void )	{
 	
 	rgpio_init( );
-	
-	rgpio_write_gpio( 11, RGPIO_HIGH );
+
+	rgpio_write_gpio( 17, RGPIO_HIGH );
 	sleep( 1 );
-	rgpio_write_gpio( 11, RGPIO_LOW );
+	rgpio_write_gpio( 17, RGPIO_LOW );
 	
 	rgpio_shutdown( );
 	
