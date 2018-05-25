@@ -39,13 +39,12 @@ SUBSYSTEM=="pwm*", PROGRAM="/bin/sh -c '\
 
 /* Definition of the output GPIOs */
 
-#define RGPIO_NB_OUTPUT			7
+#define RGPIO_NB_OUTPUT			6
 #define OUT_BCM17_PIN11			17
 #define OUT_BCM27_PIN13			27
 #define OUT_BCM22_PIN15			22
 #define OUT_BCM5_PIN29			5
 #define OUT_BCM6_PIN31			6
-#define OUT_BCM19_PIN35			19
 #define OUT_BCM26_PIN37			26
 
 /* Definition of the input GPIOs */
@@ -69,7 +68,6 @@ unsigned int rgpio_output_port[RGPIO_NB_OUTPUT] =	{
 	OUT_BCM22_PIN15,
 	OUT_BCM5_PIN29,
 	OUT_BCM6_PIN31,
-	OUT_BCM19_PIN35,
 	OUT_BCM26_PIN37
 };
 
